@@ -4,7 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA9IfaUxFv8WaoLpYVMeghwrfgPtMUhzjs",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: "image-gallery-platform.firebaseapp.com",
   projectId: "image-gallery-platform",
   storageBucket: "image-gallery-platform.firebasestorage.app",
