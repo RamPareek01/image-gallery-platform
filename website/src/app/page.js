@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useRef } from "react";
 import { auth, provider } from "@/lib/firebase";
-import { signInWithPopup } from "firebase/auth";
+import {
+  signInWithRedirect,
+  getRedirectResult,
+} from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -23,9 +26,13 @@ export default function Home() {
      Fetch Profile
   ============================== */
   const fetchProfile = async (token) => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
     const data = await res.json();
     setCurrentUser(data);
   };
@@ -50,9 +57,38 @@ export default function Home() {
   };
 
   /* ===============================
-     Auth State
+     Auth + Redirect Handling
   ============================== */
   useEffect(() => {
+    const handleRedirectLogin = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+
+        if (result) {
+          const idToken = await result.user.getIdToken();
+
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google-login`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ idToken }),
+            }
+          );
+
+          const data = await response.json();
+          localStorage.setItem("token", data.token);
+
+          await fetchProfile(data.token);
+          await fetchImages(data.token, page, sort);
+        }
+      } catch (error) {
+        console.error("Redirect login error:", error);
+      }
+    };
+
+    handleRedirectLogin();
+
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       const token = localStorage.getItem("token");
 
@@ -72,23 +108,11 @@ export default function Home() {
      Login
   ============================== */
   const handleGoogleLogin = async () => {
-    const result = await signInWithPopup(auth, provider);
-    const idToken = await result.user.getIdToken();
-
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google-login`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      }
-    );
-
-    const data = await response.json();
-    localStorage.setItem("token", data.token);
-
-    await fetchProfile(data.token);
-    await fetchImages(data.token, page, sort);
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch (error) {
+      console.error("Login error:", error);
+    }
   };
 
   /* ===============================
@@ -174,7 +198,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] text-white">
-
       {/* NAVBAR */}
       <nav className="flex justify-between items-center px-10 py-6 border-b border-white/10 backdrop-blur-lg bg-white/5">
         <h1 className="text-2xl font-bold tracking-wide">
@@ -182,7 +205,6 @@ export default function Home() {
         </h1>
 
         <div className="flex items-center gap-6">
-
           {currentUser && (
             <select
               value={sort}
@@ -207,18 +229,6 @@ export default function Home() {
             </button>
           )}
 
-          {currentUser && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center font-semibold">
-                {currentUser.name?.charAt(0)}
-              </div>
-              <div className="text-sm">
-                <p className="font-medium">{currentUser.name}</p>
-                <p className="text-gray-400 text-xs">{currentUser.role}</p>
-              </div>
-            </div>
-          )}
-
           {!currentUser ? (
             <button
               onClick={handleGoogleLogin}
@@ -237,107 +247,31 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* UPLOAD PANEL */}
-      {currentUser && (
-        <div className="max-w-4xl mx-auto mt-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
-          <h2 className="text-xl font-semibold mb-6 text-center">
-            Upload New Image
-          </h2>
-
-          <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={(e) => setFile(e.target.files[0])}
-              className="bg-slate-800 border border-slate-600 p-3 rounded-lg w-full md:w-auto"
-            />
-
-            <button
-              onClick={handleUpload}
-              disabled={loading}
-              className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg transition shadow-lg disabled:opacity-50"
-            >
-              {loading ? "Uploading..." : "Upload"}
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* IMAGE GRID */}
       <div className="max-w-7xl mx-auto px-10 mt-14">
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {images.map((img) => (
             <div
               key={img._id}
-              className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-xl hover:scale-[1.03] hover:shadow-2xl transition-all duration-300"
+              className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-xl"
             >
-              <div className="overflow-hidden">
-                <img
-                  src={img.url}
-                  alt="Uploaded"
-                  className="w-full h-60 object-cover group-hover:scale-110 transition duration-500"
-                />
-              </div>
+              <img
+                src={img.url}
+                alt="Uploaded"
+                className="w-full h-60 object-cover"
+              />
 
-              <div className="p-5">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-300">
-                    {img.uploadedBy?.name}
-                  </span>
-
-                  <span className="text-sm text-gray-400">
-                    ❤️ {img.likeCount || 0}
-                  </span>
-                </div>
-
-                {currentUser && (
-                  <button
-                    onClick={() => handleLike(img._id)}
-                    className="mt-4 w-full bg-pink-600 hover:bg-pink-700 py-2 rounded-lg transition"
-                  >
-                    ❤️ Like / Unlike
-                  </button>
-                )}
-
-                {(currentUser &&
-                  (currentUser._id === img.uploadedBy?._id ||
-                    currentUser.role === "admin")) && (
-                  <button
-                    onClick={() => handleDelete(img._id)}
-                    className="mt-3 w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg transition"
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
+              {currentUser && (
+                <button
+                  onClick={() => handleLike(img._id)}
+                  className="w-full bg-pink-600 py-2"
+                >
+                  ❤️ Like / Unlike
+                </button>
+              )}
             </div>
           ))}
         </div>
-
-        {/* PAGINATION */}
-        {currentUser && (
-          <div className="flex justify-center items-center gap-8 mt-16">
-            <button
-              onClick={() => setPage((prev) => prev - 1)}
-              disabled={page === 1}
-              className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition disabled:opacity-30"
-            >
-              Previous
-            </button>
-
-            <span className="text-gray-300">
-              Page {page} of {totalPages}
-            </span>
-
-            <button
-              onClick={() => setPage((prev) => prev + 1)}
-              disabled={page === totalPages}
-              className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition disabled:opacity-30"
-            >
-              Next
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
