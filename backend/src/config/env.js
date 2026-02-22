@@ -7,6 +7,7 @@ const env = cleanEnv(process.env, {
   CLOUDINARY_CLOUD_NAME: str(),
   CLOUDINARY_API_KEY: str(),
   CLOUDINARY_API_SECRET: str(),
+  FIREBASE_SERVICE_ACCOUNT: str(), 
 });
 
 module.exports = env;
