@@ -19,9 +19,6 @@ export default function Home() {
 
   const fileInputRef = useRef(null);
 
-  /* ===============================
-     Fetch Profile
-  ============================== */
   const fetchProfile = async (token) => {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
@@ -32,9 +29,6 @@ export default function Home() {
     setCurrentUser(data);
   };
 
-  /* ===============================
-     Fetch Images
-  ============================== */
   const fetchImages = async (token, pageNumber = 1, sortOption = sort) => {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/images?page=${pageNumber}&limit=8&sort=${sortOption}`,
@@ -46,9 +40,6 @@ export default function Home() {
     setTotalPages(data.totalPages || 1);
   };
 
-  /* ===============================
-     Auth Listener
-  ============================== */
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       const token = localStorage.getItem("token");
@@ -65,33 +56,24 @@ export default function Home() {
     return () => unsubscribe();
   }, [page, sort]);
 
-  /* ===============================
-     Login
-  ============================== */
   const handleGoogleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const idToken = await result.user.getIdToken();
+    const result = await signInWithPopup(auth, provider);
+    const idToken = await result.user.getIdToken();
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google-login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken }),
-        }
-      );
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google-login`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      }
+    );
 
-      if (!response.ok) throw new Error("Login failed");
+    const data = await response.json();
+    localStorage.setItem("token", data.token);
 
-      const data = await response.json();
-      localStorage.setItem("token", data.token);
-
-      await fetchProfile(data.token);
-      await fetchImages(data.token, 1, sort);
-    } catch (error) {
-      console.error(error);
-    }
+    await fetchProfile(data.token);
+    await fetchImages(data.token, 1, sort);
   };
 
   const handleLogout = async () => {
@@ -101,9 +83,6 @@ export default function Home() {
     setImages([]);
   };
 
-  /* ===============================
-     Upload
-  ============================== */
   const handleUpload = async () => {
     if (!file) return alert("Select a file first");
 
@@ -162,12 +141,12 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] text-white">
 
       {/* NAVBAR */}
-      <nav className="flex justify-between items-center px-10 py-6 border-b border-white/10 backdrop-blur-xl bg-white/5 shadow-lg">
-        <h1 className="text-2xl font-bold tracking-wide">
+      <nav className="flex flex-col sm:flex-row sm:justify-between sm:items-center px-4 sm:px-10 py-4 sm:py-6 border-b border-white/10 backdrop-blur-xl bg-white/5 shadow-lg gap-4 sm:gap-0">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-wide text-center sm:text-left">
           Image Gallery
         </h1>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap justify-center sm:justify-end items-center gap-3 sm:gap-6">
 
           {currentUser && (
             <select
@@ -176,7 +155,7 @@ export default function Home() {
                 setPage(1);
                 setSort(e.target.value);
               }}
-              className="bg-gray-400 px-4 py-2 rounded-lg text-black shadow-md"
+              className="bg-gray-400 px-3 py-2 rounded-lg text-black text-sm"
             >
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
@@ -187,23 +166,23 @@ export default function Home() {
           {currentUser && (
             <button
               onClick={() => router.push("/liked")}
-              className="bg-pink-600 hover:bg-pink-700 active:scale-95 transition-all duration-200 px-5 py-2 rounded-lg shadow-lg"
+              className="bg-pink-600 hover:bg-pink-700 active:scale-95 transition-all duration-200 px-4 py-2 rounded-lg text-sm shadow-md"
             >
-              Liked Images
+              Liked
             </button>
           )}
 
           {!currentUser ? (
             <button
               onClick={handleGoogleLogin}
-              className="bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-200 px-5 py-2 rounded-lg shadow-lg"
+              className="bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-200 px-4 py-2 rounded-lg text-sm shadow-md"
             >
               Login
             </button>
           ) : (
             <button
               onClick={handleLogout}
-              className="bg-gray-700 hover:bg-gray-600 active:scale-95 transition-all duration-200 px-5 py-2 rounded-lg shadow-lg"
+              className="bg-gray-700 hover:bg-gray-600 active:scale-95 transition-all duration-200 px-4 py-2 rounded-lg text-sm shadow-md"
             >
               Logout
             </button>
@@ -213,23 +192,23 @@ export default function Home() {
 
       {/* UPLOAD PANEL */}
       {currentUser && (
-        <div className="max-w-4xl mx-auto mt-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300">
-          <h2 className="text-xl font-semibold mb-6 text-center">
+        <div className="max-w-4xl mx-auto mt-8 sm:mt-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-8 shadow-2xl">
+          <h2 className="text-lg sm:text-xl font-semibold mb-6 text-center">
             Upload New Image
           </h2>
 
-          <div className="flex gap-4 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <input
               type="file"
               ref={fileInputRef}
               onChange={(e) => setFile(e.target.files[0])}
-              className="bg-slate-800 border border-slate-600 p-3 rounded-lg"
+              className="bg-slate-800 border border-slate-600 p-3 rounded-lg w-full sm:w-auto"
             />
 
             <button
               onClick={handleUpload}
               disabled={loading}
-              className="bg-green-600 hover:bg-green-700 active:scale-95 transition-all duration-200 px-6 py-3 rounded-lg shadow-lg disabled:opacity-50"
+              className="bg-green-600 hover:bg-green-700 active:scale-95 transition-all duration-200 px-6 py-3 rounded-lg shadow-lg disabled:opacity-50 w-full sm:w-auto"
             >
               {loading ? "Uploading..." : "Upload"}
             </button>
@@ -238,8 +217,8 @@ export default function Home() {
       )}
 
       {/* IMAGE GRID */}
-      <div className="max-w-7xl mx-auto px-10 mt-14">
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-10 mt-10 sm:mt-14">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-10">
           {images.map((img) => (
             <div
               key={img._id}
@@ -249,13 +228,13 @@ export default function Home() {
                 <img
                   src={img.url}
                   alt="Uploaded"
-                  className="w-full h-60 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out"
+                  className="w-full h-56 sm:h-60 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out"
                 />
               </div>
 
-              <div className="p-5">
+              <div className="p-4 sm:p-5">
                 <div className="flex justify-between items-center text-sm text-gray-300 mb-3">
-                  <span>{img.uploadedBy?.name}</span>
+                  <span className="truncate">{img.uploadedBy?.name}</span>
                   <span className="font-semibold">
                     ❤️ {img.likeCount || 0}
                   </span>
@@ -264,7 +243,7 @@ export default function Home() {
                 {currentUser && (
                   <button
                     onClick={() => handleLike(img._id)}
-                    className="w-full bg-pink-600 hover:bg-pink-700 active:scale-95 transition-all duration-200 py-2 rounded-lg shadow-md"
+                    className="w-full bg-pink-600 hover:bg-pink-700 active:scale-95 transition-all duration-200 py-2 rounded-lg text-sm shadow-md"
                   >
                     ❤️ Like / Unlike
                   </button>
@@ -275,7 +254,7 @@ export default function Home() {
                     currentUser.role === "admin") && (
                     <button
                       onClick={() => handleDelete(img._id)}
-                      className="mt-3 w-full bg-red-600 hover:bg-red-700 active:scale-95 transition-all duration-200 py-2 rounded-lg shadow-md"
+                      className="mt-3 w-full bg-red-600 hover:bg-red-700 active:scale-95 transition-all duration-200 py-2 rounded-lg text-sm shadow-md"
                     >
                       Delete
                     </button>
@@ -287,23 +266,23 @@ export default function Home() {
 
         {/* PAGINATION */}
         {currentUser && (
-          <div className="flex justify-center gap-8 mt-16">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-8 mt-12 sm:mt-16 text-sm">
             <button
               disabled={page === 1}
               onClick={() => setPage((prev) => prev - 1)}
-              className="px-6 py-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-lg transition disabled:opacity-30"
+              className="px-6 py-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-lg transition disabled:opacity-30 w-full sm:w-auto"
             >
               Previous
             </button>
 
-            <span className="text-gray-300">
+            <span>
               Page {page} of {totalPages}
             </span>
 
             <button
               disabled={page === totalPages}
               onClick={() => setPage((prev) => prev + 1)}
-              className="px-6 py-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-lg transition disabled:opacity-30"
+              className="px-6 py-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-lg transition disabled:opacity-30 w-full sm:w-auto"
             >
               Next
             </button>
