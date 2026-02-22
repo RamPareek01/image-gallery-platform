@@ -23,7 +23,7 @@ export default function Home() {
      Fetch Profile
   ============================== */
   const fetchProfile = async (token) => {
-    const res = await fetch("http://localhost:5000/api/users/me", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -35,7 +35,7 @@ export default function Home() {
   ============================== */
   const fetchImages = async (token, pageNumber = 1, sortOption = sort) => {
     const res = await fetch(
-      `http://localhost:5000/api/images?page=${pageNumber}&limit=8&sort=${sortOption}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/images?page=${pageNumber}&limit=8&sort=${sortOption}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -76,7 +76,7 @@ export default function Home() {
     const idToken = await result.user.getIdToken();
 
     const response = await fetch(
-      "http://localhost:5000/api/auth/google-login",
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google-login`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -116,7 +116,7 @@ export default function Home() {
     setLoading(true);
 
     const response = await fetch(
-      "http://localhost:5000/api/images/upload",
+      `${process.env.NEXT_PUBLIC_API_URL}/api/images/upload`,
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -141,7 +141,7 @@ export default function Home() {
     const token = localStorage.getItem("token");
 
     const response = await fetch(
-      `http://localhost:5000/api/images/${id}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/images/${id}`,
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -160,7 +160,7 @@ export default function Home() {
     const token = localStorage.getItem("token");
 
     const response = await fetch(
-      `http://localhost:5000/api/images/${id}/like`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/images/${id}/like`,
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },

@@ -10,7 +10,7 @@ export default function LikedPage() {
   const router = useRouter();
 
   const fetchLikedImages = async (token) => {
-    const res = await fetch("http://localhost:5000/api/images/liked", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/images/liked`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 

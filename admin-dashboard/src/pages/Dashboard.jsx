@@ -26,7 +26,7 @@ export default function Dashboard() {
   const fetchImages = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/images/admin/all",
+        `${import.meta.env.VITE_API_URL}/api/images/admin/all`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -67,7 +67,7 @@ export default function Dashboard() {
       setAdminMessage("");
 
       await axios.post(
-        "http://localhost:5000/api/admin/create",
+        `${import.meta.env.VITE_API_URL}/api/admin/create`,
         newAdmin,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -95,7 +95,7 @@ export default function Dashboard() {
       formData.append("image", file);
 
       await axios.post(
-        "http://localhost:5000/api/images/upload",
+        `${import.meta.env.VITE_API_URL}/api/images/upload`,
         formData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -116,7 +116,7 @@ export default function Dashboard() {
   const handleDelete = async (id) => {
     try {
       await axios.delete(
-        `http://localhost:5000/api/images/${id}`,
+        `${import.meta.env.VITE_API_URL}/api/images/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
