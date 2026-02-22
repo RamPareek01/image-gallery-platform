@@ -27,9 +27,7 @@ export default function Home() {
       `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-
     if (!res.ok) return;
-
     const data = await res.json();
     setCurrentUser(data);
   };
@@ -42,9 +40,7 @@ export default function Home() {
       `${process.env.NEXT_PUBLIC_API_URL}/api/images?page=${pageNumber}&limit=8&sort=${sortOption}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-
     if (!res.ok) return;
-
     const data = await res.json();
     setImages(data.images || []);
     setTotalPages(data.totalPages || 1);
@@ -98,9 +94,6 @@ export default function Home() {
     }
   };
 
-  /* ===============================
-     Logout
-  ============================== */
   const handleLogout = async () => {
     await auth.signOut();
     localStorage.removeItem("token");
@@ -141,12 +134,8 @@ export default function Home() {
     }
   };
 
-  /* ===============================
-     Delete
-  ============================== */
   const handleDelete = async (id) => {
     const token = localStorage.getItem("token");
-
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/images/${id}`,
       {
@@ -154,18 +143,11 @@ export default function Home() {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-
-    if (response.ok) {
-      await fetchImages(token, page, sort);
-    }
+    if (response.ok) await fetchImages(token, page, sort);
   };
 
-  /* ===============================
-     Like Toggle
-  ============================== */
   const handleLike = async (id) => {
     const token = localStorage.getItem("token");
-
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/images/${id}/like`,
       {
@@ -173,57 +155,57 @@ export default function Home() {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-
-    if (response.ok) {
-      await fetchImages(token, page, sort);
-    }
+    if (response.ok) await fetchImages(token, page, sort);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] text-white">
 
       {/* NAVBAR */}
-      <nav className="flex justify-between items-center px-10 py-6 border-b border-white/10 bg-white/5">
-        <h1 className="text-2xl font-bold">Image Gallery</h1>
+      <nav className="flex justify-between items-center px-10 py-6 border-b border-white/10 backdrop-blur-xl bg-white/5 shadow-lg">
+        <h1 className="text-2xl font-bold tracking-wide">
+          Image Gallery
+        </h1>
 
         <div className="flex items-center gap-6">
+
           {currentUser && (
-            <>
-              <select
-                value={sort}
-                onChange={(e) => {
-                  setPage(1);
-                  setSort(e.target.value);
-                }}
-                className="bg-gray-400 px-4 py-2 rounded text-black"
-              >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="popular">Most Popular</option>
-              </select>
-
-              <button
-                onClick={() => router.push("/liked")}
-                className="bg-pink-600 px-5 py-2 rounded"
-              >
-                Liked Images
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="bg-gray-700 px-5 py-2 rounded"
-              >
-                Logout
-              </button>
-            </>
+            <select
+              value={sort}
+              onChange={(e) => {
+                setPage(1);
+                setSort(e.target.value);
+              }}
+              className="bg-gray-400 px-4 py-2 rounded-lg text-black shadow-md"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="popular">Most Popular</option>
+            </select>
           )}
 
-          {!currentUser && (
+          {currentUser && (
+            <button
+              onClick={() => router.push("/liked")}
+              className="bg-pink-600 hover:bg-pink-700 active:scale-95 transition-all duration-200 px-5 py-2 rounded-lg shadow-lg"
+            >
+              Liked Images
+            </button>
+          )}
+
+          {!currentUser ? (
             <button
               onClick={handleGoogleLogin}
-              className="bg-blue-600 px-5 py-2 rounded"
+              className="bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-200 px-5 py-2 rounded-lg shadow-lg"
             >
               Login
+            </button>
+          ) : (
+            <button
+              onClick={handleLogout}
+              className="bg-gray-700 hover:bg-gray-600 active:scale-95 transition-all duration-200 px-5 py-2 rounded-lg shadow-lg"
+            >
+              Logout
             </button>
           )}
         </div>
@@ -231,7 +213,7 @@ export default function Home() {
 
       {/* UPLOAD PANEL */}
       {currentUser && (
-        <div className="max-w-4xl mx-auto mt-10 bg-white/5 border border-white/10 rounded-2xl p-8">
+        <div className="max-w-4xl mx-auto mt-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300">
           <h2 className="text-xl font-semibold mb-6 text-center">
             Upload New Image
           </h2>
@@ -241,13 +223,13 @@ export default function Home() {
               type="file"
               ref={fileInputRef}
               onChange={(e) => setFile(e.target.files[0])}
-              className="bg-slate-800 p-3 rounded"
+              className="bg-slate-800 border border-slate-600 p-3 rounded-lg"
             />
 
             <button
               onClick={handleUpload}
               disabled={loading}
-              className="bg-green-600 px-6 py-3 rounded disabled:opacity-50"
+              className="bg-green-600 hover:bg-green-700 active:scale-95 transition-all duration-200 px-6 py-3 rounded-lg shadow-lg disabled:opacity-50"
             >
               {loading ? "Uploading..." : "Upload"}
             </button>
@@ -257,28 +239,32 @@ export default function Home() {
 
       {/* IMAGE GRID */}
       <div className="max-w-7xl mx-auto px-10 mt-14">
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
           {images.map((img) => (
             <div
               key={img._id}
-              className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-xl"
+              className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-300"
             >
-              <img
-                src={img.url}
-                alt="Uploaded"
-                className="w-full h-60 object-cover"
-              />
+              <div className="overflow-hidden">
+                <img
+                  src={img.url}
+                  alt="Uploaded"
+                  className="w-full h-60 object-cover transform group-hover:scale-110 transition duration-500 ease-in-out"
+                />
+              </div>
 
-              <div className="p-4">
-                <div className="flex justify-between text-sm text-gray-300 mb-2">
+              <div className="p-5">
+                <div className="flex justify-between items-center text-sm text-gray-300 mb-3">
                   <span>{img.uploadedBy?.name}</span>
-                  <span>❤️ {img.likeCount || 0}</span>
+                  <span className="font-semibold">
+                    ❤️ {img.likeCount || 0}
+                  </span>
                 </div>
 
                 {currentUser && (
                   <button
                     onClick={() => handleLike(img._id)}
-                    className="w-full bg-pink-600 py-2 rounded"
+                    className="w-full bg-pink-600 hover:bg-pink-700 active:scale-95 transition-all duration-200 py-2 rounded-lg shadow-md"
                   >
                     ❤️ Like / Unlike
                   </button>
@@ -289,7 +275,7 @@ export default function Home() {
                     currentUser.role === "admin") && (
                     <button
                       onClick={() => handleDelete(img._id)}
-                      className="mt-3 w-full bg-red-600 py-2 rounded"
+                      className="mt-3 w-full bg-red-600 hover:bg-red-700 active:scale-95 transition-all duration-200 py-2 rounded-lg shadow-md"
                     >
                       Delete
                     </button>
@@ -301,21 +287,23 @@ export default function Home() {
 
         {/* PAGINATION */}
         {currentUser && (
-          <div className="flex justify-center gap-6 mt-12">
+          <div className="flex justify-center gap-8 mt-16">
             <button
               disabled={page === 1}
               onClick={() => setPage((prev) => prev - 1)}
-              className="px-4 py-2 bg-white/10 rounded disabled:opacity-30"
+              className="px-6 py-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-lg transition disabled:opacity-30"
             >
               Previous
             </button>
 
-            <span>Page {page} of {totalPages}</span>
+            <span className="text-gray-300">
+              Page {page} of {totalPages}
+            </span>
 
             <button
               disabled={page === totalPages}
               onClick={() => setPage((prev) => prev + 1)}
-              className="px-4 py-2 bg-white/10 rounded disabled:opacity-30"
+              className="px-6 py-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-lg transition disabled:opacity-30"
             >
               Next
             </button>
