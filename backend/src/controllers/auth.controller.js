@@ -12,16 +12,21 @@ exports.googleLogin = async (req, res, next) => {
     // Verify Firebase ID Token
     const decoded = await admin.auth().verifyIdToken(idToken);
 
-    //  Find user in DB
-    const user = await User.findOne({
+    // Check if user exists
+    let user = await User.findOne({
       firebaseUid: decoded.uid,
     });
 
+    // If not found, create new user
     if (!user) {
-      return res.status(401).json({ message: "User not registered" });
+      user = await User.create({
+        firebaseUid: decoded.uid,
+        email: decoded.email,
+        name: decoded.name || "User",
+        role: "user", // default role
+      });
     }
 
-   
     res.status(200).json({
       message: "Login successful",
       token: idToken,
