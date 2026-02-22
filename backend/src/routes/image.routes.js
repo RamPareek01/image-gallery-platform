@@ -228,5 +228,25 @@ router.delete(
     }
   }
 );
+/* ===============================
+   Get Liked Images
+================================ */
+router.get("/liked", protect, async (req, res, next) => {
+  try {
+    const likes = await Like.find({ user: req.user._id }).populate({
+      path: "image",
+      populate: {
+        path: "uploadedBy",
+        select: "name role",
+      },
+    });
+
+    const likedImages = likes.map((like) => like.image);
+
+    res.json(likedImages);
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;
