@@ -9,10 +9,10 @@ exports.googleLogin = async (req, res, next) => {
       return res.status(400).json({ message: "No token provided" });
     }
 
-    // 1️⃣ Verify Firebase ID Token
+    // Verify Firebase ID Token
     const decoded = await admin.auth().verifyIdToken(idToken);
 
-    // 2️⃣ Find user in DB
+    //  Find user in DB
     const user = await User.findOne({
       firebaseUid: decoded.uid,
     });
@@ -21,8 +21,7 @@ exports.googleLogin = async (req, res, next) => {
       return res.status(401).json({ message: "User not registered" });
     }
 
-    // 3️⃣ IMPORTANT: Send back SAME idToken
-    // We are NOT creating a new JWT for Firebase users
+   
     res.status(200).json({
       message: "Login successful",
       token: idToken,
