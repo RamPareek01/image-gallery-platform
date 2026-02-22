@@ -2,10 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { auth, provider } from "@/lib/firebase";
-import {
-  signInWithRedirect,
-  getRedirectResult,
-} from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -26,69 +23,50 @@ export default function Home() {
      Fetch Profile
   ============================== */
   const fetchProfile = async (token) => {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    const data = await res.json();
-    setCurrentUser(data);
+      if (!res.ok) throw new Error("Failed to fetch profile");
+
+      const data = await res.json();
+      setCurrentUser(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   /* ===============================
      Fetch Images
   ============================== */
   const fetchImages = async (token, pageNumber = 1, sortOption = sort) => {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/images?page=${pageNumber}&limit=8&sort=${sortOption}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/images?page=${pageNumber}&limit=8&sort=${sortOption}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    const data = await res.json();
+      if (!res.ok) throw new Error("Failed to fetch images");
 
-    if (res.ok) {
+      const data = await res.json();
+
       setImages(data.images || []);
       setTotalPages(data.totalPages || 1);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   /* ===============================
-     Auth + Redirect Handling
+     Auth State Listener
   ============================== */
   useEffect(() => {
-    const handleRedirectLogin = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-
-        if (result) {
-          const idToken = await result.user.getIdToken();
-
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google-login`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ idToken }),
-            }
-          );
-
-          const data = await response.json();
-          localStorage.setItem("token", data.token);
-
-          await fetchProfile(data.token);
-          await fetchImages(data.token, page, sort);
-        }
-      } catch (error) {
-        console.error("Redirect login error:", error);
-      }
-    };
-
-    handleRedirectLogin();
-
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       const token = localStorage.getItem("token");
 
@@ -105,11 +83,29 @@ export default function Home() {
   }, [page, sort]);
 
   /* ===============================
-     Login
+     Login (Popup)
   ============================== */
   const handleGoogleLogin = async () => {
     try {
-      await signInWithRedirect(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google-login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Backend login failed");
+
+      const data = await response.json();
+      localStorage.setItem("token", data.token);
+
+      await fetchProfile(data.token);
+      await fetchImages(data.token, 1, sort);
     } catch (error) {
       console.error("Login error:", error);
     }
@@ -139,23 +135,27 @@ export default function Home() {
 
     setLoading(true);
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/images/upload`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      }
-    );
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/images/upload`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        }
+      );
 
-    setLoading(false);
+      if (!response.ok) throw new Error("Upload failed");
 
-    if (response.ok) {
       setPage(1);
       await fetchImages(token, 1, sort);
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err) {
+      console.error(err);
     }
+
+    setLoading(false);
   };
 
   /* ===============================
@@ -164,16 +164,20 @@ export default function Home() {
   const handleDelete = async (id) => {
     const token = localStorage.getItem("token");
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/images/${id}`,
-      {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/images/${id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    if (response.ok) {
+      if (!response.ok) throw new Error("Delete failed");
+
       await fetchImages(token, page, sort);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -183,21 +187,26 @@ export default function Home() {
   const handleLike = async (id) => {
     const token = localStorage.getItem("token");
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/images/${id}/like`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/images/${id}/like`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    if (response.ok) {
+      if (!response.ok) throw new Error("Like failed");
+
       await fetchImages(token, page, sort);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] text-white">
+
       {/* NAVBAR */}
       <nav className="flex justify-between items-center px-10 py-6 border-b border-white/10 backdrop-blur-lg bg-white/5">
         <h1 className="text-2xl font-bold tracking-wide">
@@ -205,6 +214,7 @@ export default function Home() {
         </h1>
 
         <div className="flex items-center gap-6">
+
           {currentUser && (
             <select
               value={sort}
@@ -246,6 +256,32 @@ export default function Home() {
           )}
         </div>
       </nav>
+
+      {/* UPLOAD PANEL */}
+      {currentUser && (
+        <div className="max-w-4xl mx-auto mt-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
+          <h2 className="text-xl font-semibold mb-6 text-center">
+            Upload New Image
+          </h2>
+
+          <div className="flex gap-4 justify-center items-center">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={(e) => setFile(e.target.files[0])}
+              className="bg-slate-800 border border-slate-600 p-3 rounded-lg"
+            />
+
+            <button
+              onClick={handleUpload}
+              disabled={loading}
+              className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg transition shadow-lg disabled:opacity-50"
+            >
+              {loading ? "Uploading..." : "Upload"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* IMAGE GRID */}
       <div className="max-w-7xl mx-auto px-10 mt-14">
