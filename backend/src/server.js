@@ -13,6 +13,7 @@ const { apiLimiter, authLimiter } = require("./middleware/rateLimiter");
 const adminAuthRoutes = require("./routes/adminAuth.routes");
 
 const app = express();
+app.set("trust proxy", 1);
 
 connectDB();
 
