@@ -7,14 +7,10 @@ The system is built using a modern SaaS architecture with separate user and admi
 Live Applications
 
 User Application (Next.js)
-https://your-user-app.vercel.app
+https://image-gallery-platform.vercel.app/
 
 Admin Dashboard (Vite + React)
-https://your-admin-app.vercel.app
-
-Backend API (Express)
-https://your-backend-url.onrender.com
-
+https://image-gallery-platform-wpzd.vercel.app/
 
 Authentication: Firebase (Google OAuth)
 
